@@ -28,14 +28,13 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
   void initState() {
     super.initState();
     _routineNameController = TextEditingController(text: widget.routine.name);
-    // 建立一個可修改的深拷貝副本來進行編輯
     _exercises = widget.routine.exercises.map((ex) =>
         Exercise(
           name: ex.name,
           restTimeInSeconds: ex.restTimeInSeconds,
           weightUnit: ex.weightUnit,
           sets: ex.sets.map((s) =>
-            ExerciseSet(reps: s.reps, weight: s.weight)).toList()
+            ExerciseSet(reps: s.reps, weight: s.weight, lastReps: s.lastReps, lastWeight: s.lastWeight)).toList()
         )
     ).toList();
   }
@@ -48,7 +47,6 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
 
   void _saveRoutine() {
     final workoutData = Provider.of<WorkoutData>(context, listen: false);
-    // 從編輯後的本地狀態 _exercises 建立新的 Routine 物件
     final updatedRoutine = WorkoutRoutine(
       name: _routineNameController.text,
       exercises: _exercises,
@@ -125,7 +123,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          // *** 休息時間和單位設定 ***
+                          // 休息時間和單位設定
                           Row(
                             children: [
                               Expanded(
@@ -154,7 +152,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                           const Divider(height: 20),
                           ...exercise.sets.asMap().entries.map((entrySet) {
                             int setIndex = entrySet.key;
-                            // *** 組數拆分為次數和重量 ***
+                            // 組數拆分為次數和重量
                             return Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [

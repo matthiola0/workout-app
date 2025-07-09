@@ -116,8 +116,9 @@ class HomePage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => WorkoutInProgressPage(
-                          // *** 傳入選擇的菜單 ***
+                          // 傳入選擇的菜單
                           routine: routine,
+                          routineIndex: index,
                         ),
                       ),
                     );
