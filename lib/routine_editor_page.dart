@@ -3,6 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'workout_data.dart';
+import 'exercise_selection_page.dart';
+import 'exercise_library.dart';
+import 'exercise_detail_page.dart';
 
 class RoutineEditorPage extends StatefulWidget {
   final WorkoutRoutine routine;
@@ -66,6 +69,35 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  // 處理跳轉到選擇頁的邏輯
+  void _addExercise() async {
+    // 返回的可能是一個從庫裡選的，或是自訂的 Exercise 物件
+    final selectedExercise = await Navigator.push<Exercise>(
+      context,
+      MaterialPageRoute(builder: (context) => const ExerciseSelectionPage()),
+    );
+
+    if (selectedExercise != null) {
+      setState(() {
+        _exercises.add(selectedExercise);
+      });
+    }
+  }
+
+  void _editExerciseDetails(Exercise exercise) async {
+    // 等待使用者從詳情頁回傳更新後的 exercise 物件
+    final updatedExercise = await Navigator.push<Exercise>(
+      context,
+      MaterialPageRoute(builder: (context) => ExerciseDetailPage(exercise: exercise)),
+    );
+
+    if (updatedExercise != null) {
+      setState(() {
+        // exercise 是 class，只需要呼叫 setState 來刷新 UI 即可
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,91 +134,91 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                   final exercise = _exercises[exerciseIndex];
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: TextEditingController(text: exercise.name),
-                                  decoration: InputDecoration(labelText: '運動 ${exerciseIndex + 1}'),
-                                  onChanged: (newName) { exercise.name = newName; },
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                onPressed: () { setState(() { _exercises.removeAt(exerciseIndex); }); },
-                              ),
-                            ],
+                    child: Column(
+                      children: [
+                        ListTile(
+                          title: Text(exercise.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                          subtitle: Text(exercise.category.displayName), // 顯示動作分類
+                          trailing: IconButton( // 將刪除按鈕放到這裡
+                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                            onPressed: () {
+                              setState(() {
+                                _exercises.removeAt(exerciseIndex);
+                              });
+                            },
                           ),
-                          const SizedBox(height: 10),
-                          // 休息時間和單位設定
-                          Row(
+                          onTap: () => _editExerciseDetails(exercise), // 整個 ListTile 都可以點擊
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Column(
                             children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: TextEditingController(text: exercise.restTimeInSeconds.toString()),
-                                  decoration: const InputDecoration(labelText: '組間休息(秒)', border: OutlineInputBorder()),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (value) { exercise.restTimeInSeconds = int.tryParse(value) ?? 60; },
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              SegmentedButton<WeightUnit>(
-                                segments: const <ButtonSegment<WeightUnit>>[
-                                  ButtonSegment<WeightUnit>(value: WeightUnit.kg, label: Text('kg')),
-                                  ButtonSegment<WeightUnit>(value: WeightUnit.lbs, label: Text('lbs')),
+                              // 休息時間和單位設定
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: TextEditingController(text: exercise.restTimeInSeconds.toString()),
+                                      decoration: const InputDecoration(labelText: '組間休息(秒)', border: OutlineInputBorder()),
+                                      keyboardType: TextInputType.number,
+                                      onChanged: (value) { exercise.restTimeInSeconds = int.tryParse(value) ?? 60; },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  SegmentedButton<WeightUnit>(
+                                    segments: const <ButtonSegment<WeightUnit>>[
+                                      ButtonSegment<WeightUnit>(value: WeightUnit.kg, label: Text('kg')),
+                                      ButtonSegment<WeightUnit>(value: WeightUnit.lbs, label: Text('lbs')),
+                                    ],
+                                    selected: {exercise.weightUnit},
+                                    onSelectionChanged: (Set<WeightUnit> newSelection) {
+                                      setState(() {
+                                        exercise.weightUnit = newSelection.first;
+                                      });
+                                    },
+                                  ),
                                 ],
-                                selected: {exercise.weightUnit},
-                                onSelectionChanged: (Set<WeightUnit> newSelection) {
-                                  setState(() {
-                                    exercise.weightUnit = newSelection.first;
-                                  });
-                                },
                               ),
+                              const Divider(height: 20),
+                              ...exercise.sets.asMap().entries.map((entrySet) {
+                                int setIndex = entrySet.key;
+                                // 組數拆分為次數和重量
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text("第 ${setIndex + 1} 組", style: const TextStyle(fontSize: 16)),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: TextEditingController(text: entrySet.value.reps),
+                                        decoration: const InputDecoration(labelText: '次數'),
+                                        onChanged: (newReps) { entrySet.value.reps = newReps; },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: TextEditingController(text: entrySet.value.weight),
+                                        decoration: const InputDecoration(labelText: '重量'),
+                                        keyboardType: TextInputType.number,
+                                        onChanged: (newWeight) { entrySet.value.weight = newWeight; },
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.grey),
+                                      onPressed: () { setState(() { exercise.sets.removeAt(setIndex); }); },
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                              TextButton(
+                                child: const Text('新增組數'),
+                                onPressed: () { setState(() { exercise.sets.add(ExerciseSet(reps: '', weight: '')); }); },
+                              )
                             ],
                           ),
-                          const Divider(height: 20),
-                          ...exercise.sets.asMap().entries.map((entrySet) {
-                            int setIndex = entrySet.key;
-                            // 組數拆分為次數和重量
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text("第 ${setIndex + 1} 組", style: const TextStyle(fontSize: 16)),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: TextField(
-                                    controller: TextEditingController(text: entrySet.value.reps),
-                                    decoration: const InputDecoration(labelText: '次數'),
-                                    onChanged: (newReps) { entrySet.value.reps = newReps; },
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: TextField(
-                                    controller: TextEditingController(text: entrySet.value.weight),
-                                    decoration: const InputDecoration(labelText: '重量'),
-                                    keyboardType: TextInputType.number,
-                                    onChanged: (newWeight) { entrySet.value.weight = newWeight; },
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.grey),
-                                  onPressed: () { setState(() { exercise.sets.removeAt(setIndex); }); },
-                                ),
-                              ],
-                            );
-                          }).toList(),
-                          TextButton(
-                            child: const Text('新增組數'),
-                            onPressed: () { setState(() { exercise.sets.add(ExerciseSet(reps: '', weight: '')); }); },
-                          )
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -194,11 +226,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             ),
             ElevatedButton(
               child: const Text('新增運動項目'),
-              onPressed: () {
-                setState(() {
-                  _exercises.add(Exercise(name: '', sets: [ExerciseSet(reps: '', weight: '')]));
-                });
-              },
+              onPressed: _addExercise, 
             )
           ],
         ),

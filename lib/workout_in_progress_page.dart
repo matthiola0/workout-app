@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'workout_data.dart';
+import 'exercise_selection_page.dart';
+import 'exercise_detail_page.dart';
 
 class WorkoutInProgressPage extends StatefulWidget {
   final WorkoutRoutine routine;
@@ -28,13 +30,17 @@ class _WorkoutInProgressPageState extends State<WorkoutInProgressPage> {
   void initState() {
     super.initState();
     _startTimer();
+    // 深拷貝，確保有自己的獨立副本 (此處邏輯需一併更新)
     _exercises = widget.routine.exercises.map((ex) =>
         Exercise(
-            name: ex.name,
-            restTimeInSeconds: ex.restTimeInSeconds,
-            weightUnit: ex.weightUnit,
-            sets: ex.sets.map((s) =>
-                ExerciseSet(reps: s.reps, weight: s.weight, lastReps: s.lastReps, lastWeight: s.lastWeight, isCompleted: false)).toList()
+          name: ex.name,
+          imagePath: ex.imagePath,
+          category: ex.category,
+          description: ex.description,
+          restTimeInSeconds: ex.restTimeInSeconds,
+          weightUnit: ex.weightUnit,
+          sets: ex.sets.map((s) =>
+            ExerciseSet(reps: s.reps, weight: s.weight, lastReps: s.lastReps, lastWeight: s.lastWeight, isCompleted: false)).toList()
         )
     ).toList();
   }
@@ -96,6 +102,31 @@ class _WorkoutInProgressPageState extends State<WorkoutInProgressPage> {
     );
   }
   
+  // 處理從選擇頁回傳的 Exercise 物件
+  void _addExercise() async {
+    final selectedExercise = await Navigator.push<Exercise>(
+      context,
+      MaterialPageRoute(builder: (context) => const ExerciseSelectionPage()),
+    );
+
+    if (selectedExercise != null) {
+      setState(() {
+        _exercises.add(selectedExercise);
+      });
+    }
+  }
+
+  // 處理跳轉到詳情頁的邏輯
+  void _editExerciseDetails(Exercise exercise) async {
+    await Navigator.push<Exercise>(
+      context,
+      MaterialPageRoute(builder: (context) => ExerciseDetailPage(exercise: exercise)),
+    );
+    
+    // 我們只需要呼叫 setState 來刷新 UI 即可。
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,21 +145,21 @@ class _WorkoutInProgressPageState extends State<WorkoutInProgressPage> {
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ExpansionTile(
-                    title: TextField(
-                      controller: TextEditingController(text: exercise.name),
-                      onChanged: (newName) {
-                        // 當使用者輸入時，直接更新當前訓練副本中的名稱
-                        exercise.name = newName;
-                      },
-                      decoration: const InputDecoration(
-                        border: InputBorder.none, // 移除底線，讓它看起來像標題
+                    title: InkWell(
+                      onTap: () => _editExerciseDetails(exercise), // 點擊時呼叫新方法
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12.0),
+                        child: Text(
+                          exercise.name, // 直接顯示名稱
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
                       ),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
+                    subtitle: Text(exercise.category.displayName), // 順便顯示分類
                     initiallyExpanded: true,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 8.0),
                         child: Column(
                           children: [
                             Row(
@@ -227,11 +258,7 @@ class _WorkoutInProgressPageState extends State<WorkoutInProgressPage> {
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 40)),
               child: const Text('+ 新增動作'),
-              onPressed: () {
-                setState(() {
-                  _exercises.add(Exercise(name: '新動作', sets: [ExerciseSet(reps: '', weight: '')]));
-                });
-              },
+              onPressed: _addExercise,
             ),
           ),
           Padding(

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'dart:collection';
+import 'exercise_library.dart';
 
 // 定義重量單位的列舉
 enum WeightUnit { kg, lbs }
@@ -23,18 +24,24 @@ class ExerciseSet {
   });
 }
 
-// 代表一個完整的運動項目
+// 運動項目
 class Exercise {
   String name;
   final List<ExerciseSet> sets;
   int restTimeInSeconds; // 組間休息秒數
   WeightUnit weightUnit;   // 重量單位
+  String imagePath; // 儲存圖片路徑
+  ExerciseCategory category;
+  String description;
 
   Exercise({
     required this.name,
     required this.sets,
     this.restTimeInSeconds = 60, // 預設 60 秒
     this.weightUnit = WeightUnit.kg, // 預設公斤
+    this.imagePath = '', // 預設無圖片
+    this.category = ExerciseCategory.other, // 預設為其他
+    this.description = '',
   });
 }
 
@@ -48,6 +55,88 @@ class WorkoutRoutine {
 
 // --- 狀態管理中心 (State Management) ---
 class WorkoutData extends ChangeNotifier {
+  final List<Exercise> _masterExerciseList = [
+    Exercise(
+      name: 'dumbbell_shoulder_press',
+      imagePath: 'assets/images/dumbbell_shoulder_press.jpg',
+      category: ExerciseCategory.shoulder,
+      sets: [
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+      ],
+    ),
+    Exercise(
+      name: 'hammer_dumbbell_curl',
+      imagePath: 'assets/images/hammer_dumbbell_curl.jpg',
+      category: ExerciseCategory.arm,
+      sets: [
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+      ],
+    ),
+    Exercise(
+      name: '平板臥推',
+      imagePath: '',
+      category: ExerciseCategory.chest,
+      description: '發展胸大肌、前三角肌和三頭肌的主要動作。',
+      sets: [
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+      ],
+    ),
+    Exercise(
+      name: '深蹲',
+      imagePath: '',
+      category: ExerciseCategory.leg,
+      description: '全身性的力量訓練動作，主要鍛鍊股四頭肌、臀大肌和腿後腱肌群。',
+      sets: [
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+      ],
+    ),
+    Exercise(
+      name: '硬舉',
+      imagePath: '',
+      category: ExerciseCategory.back,
+      description: '一個複合式動作，能有效訓練背部、臀部和腿後側肌群。',
+      sets: [
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+      ],
+    ),
+    Exercise(
+      name: '肩推',
+      imagePath: '',
+      category: ExerciseCategory.shoulder,
+      sets: [
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+      ],
+    ),
+    Exercise(
+      name: '引體向上',
+      imagePath: '',
+      category: ExerciseCategory.back,
+      sets: [
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+        ExerciseSet(reps: '', weight: ''),
+      ],
+    ),
+  ];
   final List<WorkoutRoutine> _routines = [
     // 使用新的資料結構更新預設資料
     WorkoutRoutine(
@@ -76,7 +165,14 @@ class WorkoutData extends ChangeNotifier {
     ),
   ];
 
+  UnmodifiableListView<Exercise> get masterExerciseList => UnmodifiableListView(_masterExerciseList);
   UnmodifiableListView<WorkoutRoutine> get routines => UnmodifiableListView(_routines);
+
+  // 用來將新動作存入總列表
+  void addExerciseToLibrary(Exercise exercise) {
+    _masterExerciseList.add(exercise);
+    notifyListeners(); // 通知 UI 更新
+  }
 
   // 儲存訓練紀錄與更新菜單
   void saveWorkoutLog(int routineIndex, List<Exercise> completedExercises, bool updateRoutineStructure) {
